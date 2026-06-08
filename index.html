@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Family Photo Restoration</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Crimson+Pro:wght@300;400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cream: #f5f0e8;
+      --warm-white: #faf8f4;
+      --sepia-light: #e8d8b8;
+      --sepia-mid: #c4a882;
+      --sepia-dark: #8b6f47;
+      --ink: #2a1f14;
+      --ink-soft: #5a4a38;
+      --red-accent: #8b2020;
+      --shadow: rgba(42, 31, 20, 0.15);
+    }
+    body {
+      font-family: 'Crimson Pro', Georgia, serif;
+      background: var(--cream);
+      color: var(--ink);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.6;
+    }
+    .page-wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 52px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--sepia-mid);
+      position: relative;
+    }
+    header::after {
+      content: '✦';
+      position: absolute;
+      bottom: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--cream);
+      padding: 0 12px;
+      color: var(--sepia-dark);
+      font-size: 14px;
+    }
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 300;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--sepia-dark);
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 400;
+      line-height: 1.15;
+      color: var(--ink);
+      margin-bottom: 14px;
+    }
+    h1 em { font-style: italic; color: var(--sepia-dark); }
+    .subtitle {
+      font-size: 1.05rem;
+      font-weight: 300;
+      color: var(--ink-soft);
+      max-width: 480px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+    .free-badge {
+      display: inline-block;
+      background: #2d6a2d;
+      color: #e8f5e8;
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 2px;
+      margin-bottom: 18px;
+    }
+    .api-section {
+      background: var(--warm-white);
+      border: 1px solid var(--sepia-light);
+      border-radius: 4px;
+      padding: 24px 28px;
+      margin-bottom: 32px;
+      box-shadow: 0 2px 12px var(--shadow);
+    }
+    .api-section label {
+      display: block;
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--sepia-dark);
+      margin-bottom: 8px;
+    }
+    .api-row { display: flex; gap: 10px; align-items: center; }
+    .api-row input {
+      flex: 1;
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.95rem;
+      padding: 10px 14px;
+      border: 1px solid var(--sepia-light);
+      border-radius: 3px;
+      background: var(--cream);
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .api-row input:focus { border-color: var(--sepia-dark); }
+    .api-hint {
+      font-size: 0.82rem;
+      color: var(--ink-soft);
+      margin-top: 8px;
+      line-height: 1.6;
+    }
+    .api-hint a { color: var(--sepia-dark); }
+    .api-hint strong { color: #2d6a2d; }
+    .upload-zone {
+      border: 2px dashed var(--sepia-mid);
+      border-radius: 4px;
+      background: var(--warm-white);
+      padding: 52px 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.25s, background 0.25s;
+      position: relative;
+      margin-bottom: 28px;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--sepia-dark);
+      background: var(--sepia-light);
+    }
+    .upload-zone input[type=file] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .upload-icon { font-size: 2.4rem; margin-bottom: 14px; opacity: 0.5; }
+    .upload-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+    .upload-hint { font-size: 0.88rem; color: var(--ink-soft); }
+    #preview-wrap { display: none; margin-bottom: 28px; }
+    #preview-wrap.visible { display: block; }
+    .preview-label {
+      font-size: 0.78rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--sepia-dark);
+      margin-bottom: 8px;
+    }
+    #preview-img {
+      max-width: 100%;
+      max-height: 420px;
+      border: 1px solid var(--sepia-light);
+      border-radius: 3px;
+      display: block;
+      box-shadow: 0 4px 20px var(--shadow);
+    }
+    .change-link {
+      font-size: 0.85rem;
+      color: var(--sepia-dark);
+      cursor: pointer;
+      text-decoration: underline;
+      margin-top: 8px;
+      display: inline-block;
+    }
+    .restore-btn {
+      width: 100%;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem;
+      letter-spacing: 0.06em;
+      padding: 16px 32px;
+      background: var(--ink);
+      color: var(--cream);
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      margin-bottom: 28px;
+    }
+    .restore-btn:hover:not(:disabled) { background: var(--sepia-dark); }
+    .restore-btn:active:not(:disabled) { transform: scale(0.99); }
+    .restore-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    #progress {
+      display: none;
+      text-align: center;
+      padding: 28px;
+      background: var(--warm-white);
+      border: 1px solid var(--sepia-light);
+      border-radius: 4px;
+      margin-bottom: 28px;
+    }
+    #progress.visible { display: block; }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 2px solid var(--sepia-light);
+      border-top-color: var(--sepia-dark);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .progress-text { font-size: 0.95rem; color: var(--ink-soft); font-style: italic; }
+    #result-wrap { display: none; }
+    #result-wrap.visible { display: block; }
+    .result-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .result-label {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      color: var(--ink);
+    }
+    .download-btn {
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.88rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 8px 20px;
+      background: transparent;
+      border: 1px solid var(--sepia-dark);
+      color: var(--sepia-dark);
+      border-radius: 3px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s;
+    }
+    .download-btn:hover { background: var(--sepia-dark); color: var(--cream); }
+    #result-img {
+      max-width: 100%;
+      max-height: 560px;
+      border: 1px solid var(--sepia-light);
+      border-radius: 3px;
+      display: block;
+      box-shadow: 0 6px 28px var(--shadow);
+      margin-bottom: 16px;
+    }
+    #assessment {
+      background: var(--warm-white);
+      border-left: 3px solid var(--sepia-mid);
+      padding: 16px 20px;
+      font-size: 0.92rem;
+      line-height: 1.75;
+      color: var(--ink-soft);
+      border-radius: 0 3px 3px 0;
+      margin-bottom: 24px;
+      white-space: pre-wrap;
+    }
+    .restore-another {
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.88rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 10px 24px;
+      background: transparent;
+      border: 1px solid var(--ink);
+      color: var(--ink);
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .restore-another:hover { background: var(--ink); color: var(--cream); }
+    .error-box {
+      display: none;
+      background: #fff5f5;
+      border: 1px solid #e8c8c8;
+      border-left: 3px solid var(--red-accent);
+      padding: 14px 18px;
+      border-radius: 0 3px 3px 0;
+      font-size: 0.92rem;
+      color: #6b2020;
+      margin-bottom: 20px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .error-box.visible { display: block; }
+    .ornament { text-align: center; color: var(--sepia-mid); font-size: 13px; letter-spacing: 0.3em; margin: 36px 0; }
+    footer {
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--sepia-mid);
+      margin-top: 60px;
+      padding-top: 24px;
+      border-top: 1px solid var(--sepia-light);
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <header>
+    <p class="eyebrow">Genealogy Photo Restoration</p>
+    <div class="free-badge">✦ Completely Free to Use</div>
+    <h1>Restore <em>Family</em> Memories</h1>
+    <p class="subtitle">Upload an old or damaged photograph and receive a carefully restored version — fading reversed, damage reduced, detail recovered.</p>
+  </header>
+
+  <div class="api-section">
+    <label for="api-key">Your Google Gemini API Key</label>
+    <div class="api-row">
+      <input type="password" id="api-key" placeholder="AIza..." autocomplete="off" />
+    </div>
+    <p class="api-hint">
+      <strong>Free, no credit card needed.</strong> Get your free key at <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> — takes 2 minutes.<br>
+      Your key is used only in your browser and sent directly to Google. It is never stored or shared.
+    </p>
+  </div>
+
+  <div class="upload-zone" id="upload-zone">
+    <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp" />
+    <div class="upload-icon">📷</div>
+    <p class="upload-title">Drop your photograph here</p>
+    <p class="upload-hint">or click to browse &nbsp;·&nbsp; JPG, PNG, WEBP accepted</p>
+  </div>
+
+  <div id="preview-wrap">
+    <p class="preview-label">Selected photograph</p>
+    <img id="preview-img" alt="Your uploaded photo" />
+    <span class="change-link" id="change-photo">Choose a different photo</span>
+  </div>
+
+  <div class="error-box" id="error-box"></div>
+
+  <button class="restore-btn" id="restore-btn" disabled>Restore This Photograph</button>
+
+  <div id="progress">
+    <div class="spinner"></div>
+    <p class="progress-text">Analysing and restoring your photograph…<br><small>This usually takes 20–40 seconds</small></p>
+  </div>
+
+  <div id="result-wrap">
+    <div class="ornament">— ✦ —</div>
+    <div class="result-header">
+      <span class="result-label">Restored Photograph</span>
+      <a id="download-link" class="download-btn" download="restored-photo.png">Download</a>
+    </div>
+    <img id="result-img" alt="Restored photograph" />
+    <div id="assessment"></div>
+    <button class="restore-another" id="restore-another">Restore Another Photo</button>
+  </div>
+
+  <footer>
+    Powered by Google Gemini AI &nbsp;·&nbsp; Free to use &nbsp;·&nbsp; Your photos are never stored or shared
+  </footer>
+
+</div>
+<script>
+const RESTORATION_PROMPT = `You are a master photo restoration specialist with 30 years of darkroom and digital experience. Your philosophy is strict: reveal what was always there — never invent what wasn't.
+
+TASK: Revitalize the attached photograph using only enhancement and restoration techniques. You must not add, generate, hallucinate, or composite any element that does not already exist within the original image data.
+
+RESTORATION PROTOCOL — apply in this sequence:
+
+1. DAMAGE ASSESSMENT
+Before touching anything, silently audit:
+- Physical damage: scratches, tears, foxing, water stains, fold creases
+- Chemical decay: fading, yellowing, silver mirroring, color dye shift
+- Capture artifacts: film grain, dust, motion blur, lens softness
+- Tonal collapse: crushed shadows, blown highlights, flat midtones
+
+2. STRUCTURAL REPAIR
+- Remove dust, scratches, and blemishes using surrounding original pixel data
+- Reconstruct torn or missing edges ONLY if clear contextual data exists immediately adjacent (no speculation — if uncertain, leave it)
+- Stabilize fold lines and crease artifacts without smoothing genuine texture
+
+3. TONAL RESTORATION
+- Recover shadow detail that decay has flattened — do not manufacture shadow
+- Restore highlight separation lost to overexposure or fading
+- Set a true black point and white point anchored to what the scene demands
+- Expand the tonal range to what the original capture intended, not beyond
+
+4. COLOR CORRECTION & GRADING
+- Neutralize yellowing and chemical color casts using the known white/neutral references within the scene
+- For black & white originals: restore to clean, neutral grayscale — do not colorize unless explicitly requested
+- For color originals: correct to period-accurate, scene-accurate tones without stylizing
+- Preserve the color temperature that was present at the moment of capture
+
+5. DETAIL & CLARITY ENHANCEMENT
+- Apply targeted sharpening only to edges and textures already present in the image data
+- Reduce film grain or digital noise only enough to stop it obscuring genuine subject detail
+- Micro-contrast: lift midtone separation to bring forward depth and dimension that fading has buried
+
+6. FINAL INTEGRITY CHECK
+Verify before delivering:
+- No element has been added, cloned in from outside the frame, or generated
+- The composition, subject count, and background are identical to the original
+- The photo reads as the same moment in time — only cleaner and truer
+
+ABSOLUTE CONSTRAINTS:
+- Do not add people, faces, limbs, or fill missing faces with AI generation
+- Do not extend backgrounds or fill edges with generated content
+- Do not smooth skin, enhance eyes, or beautify subjects
+- Do not add bokeh, vignettes, light leaks, or any stylistic effect
+- Do not colorize a black & white photo unless the user explicitly requests it
+
+OUTPUT: Return the restored image. Then write 3–5 sentences describing what damage or decay was found and what was done to address it. Keep the tone warm and accessible — this is for a family history group, not a technical audience.
+
+The revitalized photo should look like the original photograph cleaned by time itself — as if decay never happened.`;
+
+let selectedFile = null;
+let selectedBase64 = null;
+let selectedMime = null;
+
+const fileInput     = document.getElementById('file-input');
+const uploadZone    = document.getElementById('upload-zone');
+const previewWrap   = document.getElementById('preview-wrap');
+const previewImg    = document.getElementById('preview-img');
+const changePhoto   = document.getElementById('change-photo');
+const restoreBtn    = document.getElementById('restore-btn');
+const progressEl    = document.getElementById('progress');
+const resultWrap    = document.getElementById('result-wrap');
+const resultImg     = document.getElementById('result-img');
+const assessment    = document.getElementById('assessment');
+const downloadLink  = document.getElementById('download-link');
+const restoreAnother = document.getElementById('restore-another');
+const errorBox      = document.getElementById('error-box');
+const apiKeyInput   = document.getElementById('api-key');
+
+function showError(msg) { errorBox.textContent = msg; errorBox.classList.add('visible'); }
+function clearError()   { errorBox.classList.remove('visible'); errorBox.textContent = ''; }
+
+function readFile(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = e => resolve(e.target.result);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+async function handleFile(file) {
+  if (!file || !file.type.startsWith('image/')) {
+    showError('Please select a valid image file (JPG, PNG, or WEBP).');
+    return;
+  }
+  clearError();
+  selectedFile = file;
+  selectedMime = file.type;
+  const dataUrl = await readFile(file);
+  selectedBase64 = dataUrl.split(',')[1];
+  previewImg.src = dataUrl;
+  previewWrap.classList.add('visible');
+  uploadZone.style.display = 'none';
+  restoreBtn.disabled = false;
+}
+
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+
+changePhoto.addEventListener('click', () => {
+  selectedFile = null; selectedBase64 = null;
+  previewWrap.classList.remove('visible');
+  uploadZone.style.display = '';
+  restoreBtn.disabled = true;
+  fileInput.value = '';
+  clearError();
+});
+
+restoreAnother.addEventListener('click', () => {
+  resultWrap.classList.remove('visible');
+  selectedFile = null; selectedBase64 = null;
+  previewWrap.classList.remove('visible');
+  uploadZone.style.display = '';
+  restoreBtn.disabled = true;
+  fileInput.value = '';
+  clearError();
+});
+
+restoreBtn.addEventListener('click', async () => {
+  const apiKey = apiKeyInput.value.trim();
+  if (!apiKey) { showError('Please enter your Gemini API key above.'); return; }
+  if (!selectedBase64) { showError('Please select a photograph first.'); return; }
+
+  clearError();
+  restoreBtn.disabled = true;
+  progressEl.classList.add('visible');
+  resultWrap.classList.remove('visible');
+
+  try {
+    const requestBody = {
+      contents: [{
+        parts: [
+          { text: RESTORATION_PROMPT },
+          { inline_data: { mime_type: selectedMime, data: selectedBase64 } }
+        ]
+      }],
+      generationConfig: { maxOutputTokens: 1024 }
+    };
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      const msg = data?.error?.message || `API error (${response.status})`;
+      throw new Error(msg);
+    }
+
+    // Parse Gemini response
+    const parts = data?.candidates?.[0]?.content?.parts || [];
+    let restoredImageData = null;
+    let restoredMime = 'image/png';
+    let assessmentText = '';
+
+    for (const part of parts) {
+      if (part.inline_data) {
+        restoredImageData = part.inline_data.data;
+        restoredMime = part.inline_data.mime_type || 'image/png';
+      } else if (part.text) {
+        assessmentText += part.text;
+      }
+    }
+
+    if (restoredImageData) {
+      const imgSrc = `data:${restoredMime};base64,${restoredImageData}`;
+      resultImg.src = imgSrc;
+      downloadLink.href = imgSrc;
+      downloadLink.download = 'restored-' + (selectedFile?.name || 'photo.png');
+      resultImg.style.display = 'block';
+    } else {
+      // Gemini returned text only — show original with assessment
+      resultImg.src = previewImg.src;
+      downloadLink.href = previewImg.src;
+      resultImg.style.display = 'block';
+      if (!assessmentText) assessmentText = "The model analysed your photograph but returned a description rather than a modified image. This can happen with some photo types. The assessment below explains what was found.";
+    }
+
+    assessment.textContent = assessmentText.trim();
+    assessment.style.display = assessmentText.trim() ? 'block' : 'none';
+
+    progressEl.classList.remove('visible');
+    resultWrap.classList.add('visible');
+    resultWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch (err) {
+    progressEl.classList.remove('visible');
+    restoreBtn.disabled = false;
+    showError('Something went wrong: ' + err.message + '\n\nDouble-check your API key and try again.');
+  }
+});
+</script>
+</body>
+</html>
